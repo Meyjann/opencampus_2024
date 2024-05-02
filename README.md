@@ -1,2 +1,2 @@
-# opencampus_2024
-This is a repository for backend program for open campus 2024
+# HAI Lab: Open Campus 2024
+This is a repository for backend program for Open Campus 2024 in NAIST
