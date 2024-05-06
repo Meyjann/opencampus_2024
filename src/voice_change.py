@@ -81,7 +81,7 @@ def play_audio(filename: str = WAVE_OUTPUT_FILENAME):
     stream.close()
     audio.terminate()
 
-def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filename: str = WAVE_OUTPUT_FILENAME):
+def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filename: str = WAVE_OUTPUT_FILENAME) -> str:
     '''
     Perform text-to-speech using the STEN TTS API.
 
@@ -109,14 +109,12 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
         'Content-type': 'application/json',
     }
 
-    response = requests.post(URL, data=json.dumps(data), headers=headers)
+    response = requests.post(STEN_URL, data=json.dumps(data), headers=headers)
     data = response.content
     data = ast.literal_eval(data.decode("utf-8"))
     url_output = data["body"]["audio_path"]
 
-    print(url_output)
-
-    play_mp3_from_url(url_output)
+    return url_output
 
 def play_mp3_from_url(url: str):
     '''

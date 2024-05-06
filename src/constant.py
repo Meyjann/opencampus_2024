@@ -18,4 +18,4 @@ WAVE_OUTPUT_FILENAME = "output.wav"
 '''
 STEN-TTS API
 '''
-URL = "https://ttspr.ai4med.vn/rest/tts_api_multilingual/v1"
+STEN_URL = "https://ttspr.ai4med.vn/rest/tts_api_multilingual/v1"

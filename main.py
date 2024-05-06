@@ -14,7 +14,8 @@ if __name__ == '__main__':
             call_stentts()
         elif sys.argv[1] == 'record':
             record()
-            exec_voice_change()
+            result_url = exec_voice_change()
+            play_mp3_from_url(result_url)
         else:
             raise Exception("Invalid command name.")
     else:

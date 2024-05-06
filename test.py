@@ -1,4 +1,5 @@
 import os
+import requests
 import sys
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton
@@ -6,7 +7,12 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl, QTimer
 
+from src import *
+
 class VideoBackground(QMainWindow):
+    '''
+    Constructor
+    '''
     def __init__(self):
         super().__init__()
 
@@ -33,22 +39,23 @@ class VideoBackground(QMainWindow):
         layout.addWidget(self.video_widget)
 
         # Create a QMediaPlayer to control the video playback
-        self.media_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        self.media_player.setVideoOutput(self.video_widget)
+        self.video_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.video_player.setVideoOutput(self.video_widget)
         self.load_video()
 
         # Load the video file
-        self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[self.curr_video_idx])))
+        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[self.curr_video_idx])))
+        self.video_player.play()
 
-        # Play the video
-        self.media_player.play()
+        # Create a QMediaPlayer to control the audio playback
+        self.audio_player = QMediaPlayer()
 
         # Create a button to start recording
         self.record_button = QPushButton("Record", self)
-        self.record_button.clicked.connect(self.switch_video)
+        self.record_button.clicked.connect(self.record_and_play)
         layout.addWidget(self.record_button)
 
-        # Widget modification
+        # Video widget modification
         # Make the video widget transparent
         self.video_widget.setAttribute(Qt.WA_TranslucentBackground)
         # Bring the video widget to the background
@@ -60,22 +67,58 @@ class VideoBackground(QMainWindow):
         self.timer.start(100)  # Update every 100 milliseconds
 
         # Self media st
-        self.media_player.stateChanged.connect(self.handle_state_changed)
-    
-    def load_video(self):
-        video_path = self.video_paths[self.curr_video_idx]
-        self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(video_path)))
-        self.media_player.play()
-    
-    def run_video_from_start(self):
-        self.media_player.setPosition(0)
-        self.media_player.play()
+        self.video_player.stateChanged.connect(self.handle_video_state_changed)
+        self.audio_player.stateChanged.connect(self.handle_audio_state_changed)
 
-    def switch_video(self):
-        if self.curr_video_idx == 0:
-            self.curr_video_idx = 1
+    '''
+    Event handlers
+    '''
+    def handle_video_state_changed(self, state):
+        # Restart the video if it reaches the end
+        if state == QMediaPlayer.StoppedState:
+            self.video_player.setPosition(0)
+            self.video_player.play()
+    
+    def handle_audio_state_changed(self, state):
+        if state == QMediaPlayer.StoppedState:
+            self.switch_video()
+        
+    def record_and_play(self):
+        self.curr_video_idx = 1
+
+        # Call the API to fetch the MP3 file from the online URL
+        print("RECORDING...")
+        record()
+        print("RECORDING DONE")
+        result_url = exec_voice_change()
+        print("PLAYING...")
+
+        self.play_mp3_media(result_url)
+        self.switch_video(change_idx = False)
+    
+    '''
+    Utility functions
+    '''
+    def play_mp3_media(self, url):
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Save the MP3 file locally
+            with open("audio.mp3", "wb") as f:
+                f.write(response.content)
+            
+            # Load and play the MP3 file
+            self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath("audio.mp3"))))
+            print("Playing MP3 file")
+            self.audio_player.play()
         else:
-            self.curr_video_idx = 0
+            print("Failed to fetch MP3 file")
+        
+    def switch_video(self, change_idx = True):
+        if change_idx:
+            if self.curr_video_idx == 0:
+                self.curr_video_idx = 1
+            else:
+                self.curr_video_idx = 0
         self.load_video()
 
     def update_ui(self):
@@ -85,11 +128,15 @@ class VideoBackground(QMainWindow):
         else:
             self.record_button.setEnabled(True)
     
-    def handle_state_changed(self, state):
-        # Restart the video if it reaches the end
-        if state == QMediaPlayer.StoppedState:
-            self.media_player.setPosition(0)
-            self.media_player.play()
+    def load_video(self):
+        self.video_player.stop()
+        video_path = self.video_paths[self.curr_video_idx]
+        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(video_path)))
+        self.video_player.play()
+    
+    def run_video_from_start(self):
+        self.video_player.setPosition(0)
+        self.video_player.play()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
