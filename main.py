@@ -6,13 +6,14 @@ import requests
 import wave
 import sounddevice as sd
 import numpy as np
+
 from pydub import AudioSegment
 from pydub.playback import play
 from io import BytesIO
 from scipy.io.wavfile import write
 
 
-from constant import *
+from src import *
 
 
 def record(filename: str = WAVE_OUTPUT_FILENAME):
@@ -136,6 +137,7 @@ def play_mp3_from_url(url: str):
 
 
 if __name__ == '__main__':
+    
     record()
     sten_tts()
     # sten_tts('./reference_audio/439.wav', './output.wav')
