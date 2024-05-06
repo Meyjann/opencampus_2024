@@ -163,3 +163,5 @@ cython_debug/
 # Non-python normal gitignore stuff
 reference_audio/
 *.zip
+vtube_video/
+output.wav
