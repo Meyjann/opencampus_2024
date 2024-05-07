@@ -18,4 +18,29 @@ dependencies:
   - tzdata=2024a=h0c530f3_0
   - wheel=0.43.0=pyhd8ed1ab_1
   - xz=5.2.6=h57fd34a_0
+  - pip:
+      - certifi==2024.2.2
+      - cffi==1.16.0
+      - charset-normalizer==3.3.2
+      - decorator==4.4.2
+      - idna==3.7
+      - imageio==2.34.1
+      - imageio-ffmpeg==0.4.9
+      - moviepy==1.0.3
+      - numpy==1.26.4
+      - opencv-python==4.9.0.80
+      - pillow==10.3.0
+      - proglog==0.1.10
+      - pyaudio==0.2.14
+      - pycparser==2.22
+      - pydub==0.25.1
+      - pygame==2.5.2
+      - pyqt5==5.15.10
+      - pyqt5-qt5==5.15.13
+      - pyqt5-sip==12.13.0
+      - requests==2.31.0
+      - scipy==1.13.0
+      - sounddevice==0.4.6
+      - tqdm==4.66.4
+      - urllib3==2.2.1
 prefix: /opt/homebrew/Caskroom/miniforge/base/envs/opencampus2024
