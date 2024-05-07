@@ -165,3 +165,5 @@ reference_audio/
 *.zip
 vtube_video/
 output.wav
+*.qtcreator/
+ui_qt5/
