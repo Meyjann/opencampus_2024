@@ -97,9 +97,11 @@ class VideoBackground(QMainWindow):
         if state == QMediaPlayer.StoppedState:
             self.video_widget_run.hide()
             self.video_widget.show()
+            self.record_button.setEnabled(True)
         
     def record_and_play(self):
         # Call the API to fetch the MP3 file from the online URL
+        self.record_button.setEnabled(False)
         print("RECORDING...")
         record()
         print("RECORDING DONE")
