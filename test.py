@@ -1,11 +1,13 @@
 import os
 import requests
 import sys
+import time
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl, QTimer
+from PyQt5.QtGui import QPixmap
 
 from src import *
 
@@ -18,7 +20,7 @@ class VideoBackground(QMainWindow):
 
         # Set window title and geometry
         self.setWindowTitle("Video Background")
-        self.setGeometry(100, 100, 600, 1100)
+        self.setGeometry(100, 100, 550, 1000)
 
         # Set the video paths
         idle_path = os.path.abspath("vtube_video/idle_vid2.mp4")
@@ -37,15 +39,20 @@ class VideoBackground(QMainWindow):
         # Create a QVideoWidget to display the video
         self.video_widget = QVideoWidget()
         layout.addWidget(self.video_widget)
-
-        # Create a QMediaPlayer to control the video playback
         self.video_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.video_player.setVideoOutput(self.video_widget)
-        self.load_video()
+
+        # The second video widget for the talking video
+        self.video_widget_run = QVideoWidget()
+        layout.addWidget(self.video_widget_run)
+        self.video_player_run = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.video_player_run.setVideoOutput(self.video_widget_run)
 
         # Load the video file
-        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[self.curr_video_idx])))
+        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[0])))
         self.video_player.play()
+        self.video_player_run.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[1])))
+        self.video_player_run.play()
 
         # Create a QMediaPlayer to control the audio playback
         self.audio_player = QMediaPlayer()
@@ -58,17 +65,18 @@ class VideoBackground(QMainWindow):
         # Video widget modification
         # Make the video widget transparent
         self.video_widget.setAttribute(Qt.WA_TranslucentBackground)
-        # Bring the video widget to the background
-        self.video_widget.lower()
+        self.video_widget.setStyleSheet("background-color: white;")
 
         # Create a timer to periodically update the UI
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_ui)
         self.timer.start(100)  # Update every 100 milliseconds
 
-        # Self media st
+        # Self media state changed
         self.video_player.stateChanged.connect(self.handle_video_state_changed)
+        self.video_player_run.stateChanged.connect(self.handle_video_run_state_changed)
         self.audio_player.stateChanged.connect(self.handle_audio_state_changed)
+        self.video_widget_run.hide()
 
     '''
     Event handlers
@@ -78,23 +86,35 @@ class VideoBackground(QMainWindow):
         if state == QMediaPlayer.StoppedState:
             self.video_player.setPosition(0)
             self.video_player.play()
+
+    def handle_video_run_state_changed(self, state):
+        # Restart the video if it reaches the end
+        if state == QMediaPlayer.StoppedState:
+            self.video_player_run.setPosition(0)
+            self.video_player_run.play()
     
     def handle_audio_state_changed(self, state):
         if state == QMediaPlayer.StoppedState:
-            self.switch_video()
+            self.video_widget_run.hide()
+            self.video_widget.show()
         
     def record_and_play(self):
-        self.curr_video_idx = 1
-
         # Call the API to fetch the MP3 file from the online URL
         print("RECORDING...")
         record()
         print("RECORDING DONE")
         result_url = exec_voice_change()
         print("PLAYING...")
-
+        
         self.play_mp3_media(result_url)
-        self.switch_video(change_idx = False)
+        self.video_widget.hide()
+        self.video_widget_run.show()
+
+    def handle_video_loaded(self, state):
+        if state == QMediaPlayer.LoadedMedia:
+            # Video is loaded, disconnect the signal and start playing
+            self.video_player.stateChanged.disconnect(self.handle_video_loaded)
+            self.video_player.play()
     
     '''
     Utility functions
@@ -112,6 +132,7 @@ class VideoBackground(QMainWindow):
             self.audio_player.play()
         else:
             print("Failed to fetch MP3 file")
+        print()
         
     def switch_video(self, change_idx = True):
         if change_idx:
@@ -129,10 +150,16 @@ class VideoBackground(QMainWindow):
             self.record_button.setEnabled(True)
     
     def load_video(self):
-        self.video_player.stop()
+        # self.video_player.stop()
         video_path = self.video_paths[self.curr_video_idx]
+        self.idle_image_label.show()
+
         self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(video_path)))
         self.video_player.play()
+
+        self.video_player.stateChanged.connect(self.handle_video_loaded)
+        self.idle_image_label.hide()
+        self.video_widget.lower()        
     
     def run_video_from_start(self):
         self.video_player.setPosition(0)
