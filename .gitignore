@@ -167,3 +167,5 @@ vtube_video/
 output.wav
 *.qtcreator/
 ui_qt5/
+ui/
+data/vtube_video/

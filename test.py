@@ -23,8 +23,8 @@ class VideoBackground(QMainWindow):
         self.setGeometry(100, 100, 550, 1000)
 
         # Set the video paths
-        idle_path = os.path.abspath("vtube_video/idle_vid2.mp4")
-        talk_path = os.path.abspath("vtube_video/talk_vid2.mp4")
+        idle_path = os.path.abspath("./data/video/idle_vid.mov")
+        talk_path = os.path.abspath("./data/video/talk_vid.mov")
         self.video_paths = [idle_path, talk_path]
         self.curr_video_idx = 0
 
