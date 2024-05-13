@@ -72,11 +72,6 @@ class AppMainWindow(QMainWindow):
         # Create a QMediaPlayer to control the audio playback
         self.audio_player = QMediaPlayer()
 
-        # Create a button to start recording
-        self.record_button = QPushButton("Record", self)
-        self.record_button.clicked.connect(self.handle_event_record_and_play)
-        layout.addWidget(self.record_button)
-
         # Video widget modification
         # Make the video widget transparent
         self.video_widget_idle.setAttribute(Qt.WA_TranslucentBackground)
@@ -113,6 +108,26 @@ class AppMainWindow(QMainWindow):
 
         if self.video_widget_talk.isHidden():
             self.show_talking_animation()
+
+    def record_and_play(self):
+        '''
+        Records audio, execute voice change, and play the modified audio.
+
+        This method disables the record button, starts recording audio, executes voice change,
+        fetches the modified audio file, and plays the audio while showing a talking animation.
+        '''
+        # Disable the record button and start recording
+        print("RECORDING...")
+
+        # Record the audio and execute voice change
+        record()
+        print("RECORDING DONE")
+        result_url = exec_voice_change()
+
+        # Call the API to fetch the MP3 file and play the audio
+        print("PLAYING...")
+        self.play_mp3_media(result_url)
+        self.show_talking_animation()
         
 
     '''
@@ -187,27 +202,6 @@ class AppMainWindow(QMainWindow):
                 self.show_idle_animation()
                 return
             self.talk()
-        
-    def handle_event_record_and_play(self):
-        '''
-        Handles the event to record audio, execute voice change, and play the modified audio.
-
-        This method disables the record button, starts recording audio, executes voice change,
-        fetches the modified audio file, and plays the audio while showing a talking animation.
-        '''
-        # Disable the record button and start recording
-        self.record_button.setEnabled(False)
-        print("RECORDING...")
-
-        # Record the audio and execute voice change
-        record()
-        print("RECORDING DONE")
-        result_url = exec_voice_change()
-
-        # Call the API to fetch the MP3 file and play the audio
-        print("PLAYING...")
-        self.play_mp3_media(result_url)
-        self.show_talking_animation()
     
     '''
     Utility functions
@@ -256,7 +250,6 @@ class AppMainWindow(QMainWindow):
         '''
         self.video_widget_talk.hide()
         self.video_widget_idle.show()
-        self.record_button.setEnabled(True)
     
     def show_talking_animation(self):
         '''
@@ -265,7 +258,6 @@ class AppMainWindow(QMainWindow):
         '''
         self.video_widget_idle.hide()
         self.video_widget_talk.show()
-        self.record_button.setEnabled(False)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
