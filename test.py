@@ -13,11 +13,26 @@ from src import *
 
 class AppMainWindow(QMainWindow):
     '''
-    Constructor
-    This section initializes the main window and all the widgets in the application.
+    AppMainWindow
+    This class is the main window of the application. It contains the widgets (especially the video widget) to run the program.
     '''
     def __init__(self):
+        '''
+        Constructor
+        This method initializes the application.
+        '''
         super().__init__()
+        self.init_UI()
+        self.language = "en"
+        # self.language = "jp"
+
+    def init_UI(self):
+        '''
+        UI Constructor
+        Initialize the user interface of the application.
+        '''
+        # Set the audio queue
+        self.audio_queue = []
 
         # Set window title and geometry
         self.setWindowTitle("Video Background")
@@ -27,7 +42,6 @@ class AppMainWindow(QMainWindow):
         idle_path = os.path.abspath("./data/video/idle_vid.mov")
         talk_path = os.path.abspath("./data/video/talk_vid.mov")
         self.video_paths = [idle_path, talk_path]
-        self.curr_video_idx = 0
 
         # Create a QWidget to hold the video widget and other widgets
         base_widget = QWidget(self)
@@ -75,16 +89,65 @@ class AppMainWindow(QMainWindow):
         self.video_widget_talk.hide()
 
     '''
+    Main functions
+    This section contains the flow functions that are executed in the application.
+    '''
+    def talk(self):
+        '''
+        Play the audio file specified in the audio_file_lst.
+
+        Parameters:
+        - audio_file_lst (list[int]): A list of audio file indexes.
+
+        Returns:
+        - None
+        '''
+        # Check if the audio file exists. If not, do nothing
+        if len(self.audio_queue) == 0:
+            return
+        
+        # Play the audio
+        audio_file = self.audio_queue[0]
+        self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(audio_file)))
+        self.audio_player.play()
+
+        if self.video_widget_talk.isHidden():
+            self.show_talking_animation()
+        
+
+    '''
     Event handlers
     This section contains the event handlers for the different events in the application.
     '''
+    def keyPressEvent(self, event):
+        '''
+        Handle the keypress event.
+
+        Parameters:
+            event (QKeyEvent): The key event.
+
+        Returns:
+            None
+        '''
+
+        if event.key() == Qt.Key.Key_1:
+            self.audio_queue = [
+                os.path.abspath(f"./data/audio/{self.language}/1.mp3"),
+                os.path.abspath(f"./data/audio/{self.language}/2.mp3"),
+                os.path.abspath(f"./data/audio/{self.language}/3.mp3"),
+                os.path.abspath(f"./data/audio/{self.language}/8_1.mp3"),
+                os.path.abspath(f"./data/audio/{self.language}/8_2.mp3"),
+                os.path.abspath(f"./data/audio/{self.language}/8_3.mp3"),
+            ]
+            self.talk()
+    
     def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
         '''
         Handle the event when the idle animation video player is stopped.
         By default, the video player will be rerun.
 
         Parameters:
-            state (int): The current state of the video player.
+            state (QMediaPlayer.State): The current state of the video player.
 
         Returns:
             None
@@ -98,7 +161,7 @@ class AppMainWindow(QMainWindow):
         By default, the video player will be rerun.
 
         Parameters:
-            state (int): The current state of the video player.
+            state (QMediaPlayer.State): The current state of the video player.
 
         Returns:
             None
@@ -118,7 +181,12 @@ class AppMainWindow(QMainWindow):
             None
         '''
         if state == QMediaPlayer.State.StoppedState:
-            self.show_idle_animation()
+            if len(self.audio_queue) > 0:
+                self.audio_queue.pop(0)
+            if len(self.audio_queue) == 0:
+                self.show_idle_animation()
+                return
+            self.talk()
         
     def handle_event_record_and_play(self):
         '''
@@ -173,7 +241,7 @@ class AppMainWindow(QMainWindow):
         Reruns the video by setting the position to the beginning and playing it.
 
         Parameters:
-        - video_player: The video player object.
+        - video_player (QMediaPlayer) : The video player object.
 
         Returns:
         None
