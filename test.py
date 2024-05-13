@@ -11,9 +11,10 @@ from PyQt5.QtGui import QPixmap
 
 from src import *
 
-class VideoBackground(QMainWindow):
+class AppMainWindow(QMainWindow):
     '''
     Constructor
+    This section initializes the main window and all the widgets in the application.
     '''
     def __init__(self):
         super().__init__()
@@ -29,99 +30,131 @@ class VideoBackground(QMainWindow):
         self.curr_video_idx = 0
 
         # Create a QWidget to hold the video widget and other widgets
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
+        base_widget = QWidget(self)
+        self.setCentralWidget(base_widget)
 
         # Create a layout for the central widget
         layout = QVBoxLayout()
-        central_widget.setLayout(layout)
+        base_widget.setLayout(layout)
 
         # Create a QVideoWidget to display the video
-        self.video_widget = QVideoWidget()
-        layout.addWidget(self.video_widget)
-        self.video_player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        self.video_player.setVideoOutput(self.video_widget)
+        self.video_widget_idle = QVideoWidget()
+        layout.addWidget(self.video_widget_idle)
+        self.video_player_idle = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.video_player_idle.setVideoOutput(self.video_widget_idle)
 
         # The second video widget for the talking video
-        self.video_widget_run = QVideoWidget()
-        layout.addWidget(self.video_widget_run)
-        self.video_player_run = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        self.video_player_run.setVideoOutput(self.video_widget_run)
+        self.video_widget_talk = QVideoWidget()
+        layout.addWidget(self.video_widget_talk)
+        self.video_player_talk = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.video_player_talk.setVideoOutput(self.video_widget_talk)
 
         # Load the video file
-        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[0])))
-        self.video_player.play()
-        self.video_player_run.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[1])))
-        self.video_player_run.play()
+        self.video_player_idle.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[0])))
+        self.video_player_idle.play()
+        self.video_player_talk.setMedia(QMediaContent(QUrl.fromLocalFile(self.video_paths[1])))
+        self.video_player_talk.play()
 
         # Create a QMediaPlayer to control the audio playback
         self.audio_player = QMediaPlayer()
 
         # Create a button to start recording
         self.record_button = QPushButton("Record", self)
-        self.record_button.clicked.connect(self.record_and_play)
+        self.record_button.clicked.connect(self.handle_event_record_and_play)
         layout.addWidget(self.record_button)
 
         # Video widget modification
         # Make the video widget transparent
-        self.video_widget.setAttribute(Qt.WA_TranslucentBackground)
-        self.video_widget.setStyleSheet("background-color: white;")
-
-        # Create a timer to periodically update the UI
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_ui)
-        self.timer.start(100)  # Update every 100 milliseconds
+        self.video_widget_idle.setAttribute(Qt.WA_TranslucentBackground)
+        self.video_widget_idle.setStyleSheet("background-color: white;")
 
         # Self media state changed
-        self.video_player.stateChanged.connect(self.handle_video_state_changed)
-        self.video_player_run.stateChanged.connect(self.handle_video_run_state_changed)
-        self.audio_player.stateChanged.connect(self.handle_audio_state_changed)
-        self.video_widget_run.hide()
+        self.video_player_idle.stateChanged.connect(self.handle_event_video_idle_stopped)
+        self.video_player_talk.stateChanged.connect(self.handle_event_video_talk_stopped)
+        self.audio_player.stateChanged.connect(self.handle_event_audio_stopped)
+        self.video_widget_talk.hide()
 
     '''
     Event handlers
+    This section contains the event handlers for the different events in the application.
     '''
-    def handle_video_state_changed(self, state):
-        # Restart the video if it reaches the end
-        if state == QMediaPlayer.StoppedState:
-            self.video_player.setPosition(0)
-            self.video_player.play()
+    def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
+        '''
+        Handle the event when the idle animation video player is stopped.
+        By default, the video player will be rerun.
 
-    def handle_video_run_state_changed(self, state):
-        # Restart the video if it reaches the end
-        if state == QMediaPlayer.StoppedState:
-            self.video_player_run.setPosition(0)
-            self.video_player_run.play()
+        Parameters:
+            state (int): The current state of the video player.
+
+        Returns:
+            None
+        '''
+        if state == QMediaPlayer.State.StoppedState:
+            self.rerun_video(self.video_player_idle)
+
+    def handle_event_video_talk_stopped(self, state: QMediaPlayer.State):
+        '''
+        Handle the event when the talking animation video player is stopped.
+        By default, the video player will be rerun.
+
+        Parameters:
+            state (int): The current state of the video player.
+
+        Returns:
+            None
+        '''
+        if state == QMediaPlayer.State.StoppedState:
+            self.rerun_video(self.video_player_talk)
     
-    def handle_audio_state_changed(self, state):
-        if state == QMediaPlayer.StoppedState:
-            self.video_widget_run.hide()
-            self.video_widget.show()
-            self.record_button.setEnabled(True)
+    def handle_event_audio_stopped(self, state):
+        '''
+        Handle the event when the audio is stopped.
+        By default, the idle animation will be shown and the record button will be enabled.
+
+        Parameters:
+            state (QMediaPlayer.State): The state of the audio player.
+
+        Returns:
+            None
+        '''
+        if state == QMediaPlayer.State.StoppedState:
+            self.show_idle_animation()
         
-    def record_and_play(self):
-        # Call the API to fetch the MP3 file from the online URL
+    def handle_event_record_and_play(self):
+        '''
+        Handles the event to record audio, execute voice change, and play the modified audio.
+
+        This method disables the record button, starts recording audio, executes voice change,
+        fetches the modified audio file, and plays the audio while showing a talking animation.
+        '''
+        # Disable the record button and start recording
         self.record_button.setEnabled(False)
         print("RECORDING...")
+
+        # Record the audio and execute voice change
         record()
         print("RECORDING DONE")
         result_url = exec_voice_change()
-        print("PLAYING...")
-        
-        self.play_mp3_media(result_url)
-        self.video_widget.hide()
-        self.video_widget_run.show()
 
-    def handle_video_loaded(self, state):
-        if state == QMediaPlayer.LoadedMedia:
-            # Video is loaded, disconnect the signal and start playing
-            self.video_player.stateChanged.disconnect(self.handle_video_loaded)
-            self.video_player.play()
+        # Call the API to fetch the MP3 file and play the audio
+        print("PLAYING...")
+        self.play_mp3_media(result_url)
+        self.show_talking_animation()
     
     '''
     Utility functions
+    This section contains helper functions used for various purposes in the application.
     '''
-    def play_mp3_media(self, url):
+    def play_mp3_media(self, url: str):
+        '''
+        Downloads an MP3 file from the given URL and plays it using an audio player.
+
+        Args:
+            url (str): The URL of the MP3 file to be played.
+
+        Returns:
+            None
+        '''
         response = requests.get(url)
         if response.status_code == 200:
             # Save the MP3 file locally
@@ -130,45 +163,44 @@ class VideoBackground(QMainWindow):
             
             # Load and play the MP3 file
             self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath("audio.mp3"))))
-            print("Playing MP3 file")
             self.audio_player.play()
         else:
             print("Failed to fetch MP3 file")
-        print()
-        
-    def switch_video(self, change_idx = True):
-        if change_idx:
-            if self.curr_video_idx == 0:
-                self.curr_video_idx = 1
-            else:
-                self.curr_video_idx = 0
-        self.load_video()
-
-    def update_ui(self):
-        # Update the button state based on the video playback status
-        if self.curr_video_idx == 1:
-            self.record_button.setEnabled(False)
-        else:
-            self.record_button.setEnabled(True)
+        print() # Break line
     
-    def load_video(self):
-        # self.video_player.stop()
-        video_path = self.video_paths[self.curr_video_idx]
-        self.idle_image_label.show()
+    def rerun_video(self, video_player: QMediaPlayer):
+        '''
+        Reruns the video by setting the position to the beginning and playing it.
 
-        self.video_player.setMedia(QMediaContent(QUrl.fromLocalFile(video_path)))
-        self.video_player.play()
+        Parameters:
+        - video_player: The video player object.
 
-        self.video_player.stateChanged.connect(self.handle_video_loaded)
-        self.idle_image_label.hide()
-        self.video_widget.lower()        
+        Returns:
+        None
+        '''
+        video_player.setPosition(0)
+        video_player.play()
     
-    def run_video_from_start(self):
-        self.video_player.setPosition(0)
-        self.video_player.play()
+    def show_idle_animation(self):
+        '''
+        Hides the talking video animation and shows the idle video animation.
+        Enables the record button.
+        '''
+        self.video_widget_talk.hide()
+        self.video_widget_idle.show()
+        self.record_button.setEnabled(True)
+    
+    def show_talking_animation(self):
+        '''
+        Hides the idle video animation and shows the talking video animation.
+        Disables the record button.
+        '''
+        self.video_widget_idle.hide()
+        self.video_widget_talk.show()
+        self.record_button.setEnabled(False)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = VideoBackground()
+    window = AppMainWindow()
     window.show()
     sys.exit(app.exec_())
