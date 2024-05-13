@@ -173,6 +173,9 @@ class AppMainWindow(QMainWindow):
         if event.key() == Qt.Key.Key_1:
             self.action_queue = [1, 2, 3, 5]
             self.control_next_action()
+        elif event.key() == Qt.Key.Key_2:
+            self.action_queue = [3, 5]
+            self.control_next_action()
     
     def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
         '''
@@ -216,12 +219,13 @@ class AppMainWindow(QMainWindow):
         if state == QMediaPlayer.State.StoppedState:
             if len(self.audio_queue) > 0:
                 self.audio_queue.pop(0)
+                self.talk()
+
             if len(self.audio_queue) == 0:
                 self.show_idle_animation()
                 if len(self.action_queue) > 1:
                     self.action_queue.pop(0)
                     self.control_next_action()
-            self.talk()
     
     '''
     Utility functions
