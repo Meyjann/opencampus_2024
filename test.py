@@ -253,6 +253,7 @@ class AppMainWindow(QMainWindow):
             os.path.abspath(f"./data/audio/{self.language}/6.mp3"),
             os.path.abspath(f"./data/audio/{self.language}/7.mp3"),
         ]
+        time.sleep(0.5)
         self.talk()
 
     def do_final_talk(self):
