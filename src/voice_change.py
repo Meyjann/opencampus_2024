@@ -91,14 +91,14 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
     '''
     audio_binary = open(source_filename, 'rb') #open binary file in read mode
     audio_binary_base64 = base64.b64encode(audio_binary.read())
-    text = "これは北陸先端科学技術大学院大学"
+    text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
 
     data = {
         'text': text,
         'speed': 1.0,
         'voice': 'multilingual_diff_14',
         'full_mp3': 1,
-        'language': "japanese",
+        'language': "english",
         'energy': 1.0,
         'pitch': 1.0,
         'reference': audio_binary_base64.decode('utf-8'),

@@ -22,26 +22,30 @@ class AppMainWindow(QMainWindow):
         This method initializes the application.
         '''
         super().__init__()
-        self.init_UI()
+        # Set the audio and action queue
+        self.audio_queue = []
+        self.action_queue = []
+
+        # Set the video paths
+        idle_path = os.path.abspath("./data/video/idle_vid.mov")
+        talk_path = os.path.abspath("./data/video/talk_vid.mov")
+        self.video_paths = [idle_path, talk_path]
+        
+        # Initialize the used language
         self.language = "en"
         # self.language = "jp"
+
+        # Initialize the UI
+        self.init_UI()
 
     def init_UI(self):
         '''
         UI Constructor
         Initialize the user interface of the application.
         '''
-        # Set the audio queue
-        self.audio_queue = []
-
         # Set window title and geometry
         self.setWindowTitle("Video Background")
-        self.setGeometry(100, 100, 550, 1000)
-
-        # Set the video paths
-        idle_path = os.path.abspath("./data/video/idle_vid.mov")
-        talk_path = os.path.abspath("./data/video/talk_vid.mov")
-        self.video_paths = [idle_path, talk_path]
+        self.setGeometry(100, 100, 550, 835)
 
         # Create a QWidget to hold the video widget and other widgets
         base_widget = QWidget(self)
@@ -113,7 +117,7 @@ class AppMainWindow(QMainWindow):
         '''
         Records audio, execute voice change, and play the modified audio.
 
-        This method disables the record button, starts recording audio, executes voice change,
+        This method starts recording audio, executes voice change, then
         fetches the modified audio file, and plays the audio while showing a talking animation.
         '''
         # Disable the record button and start recording
@@ -128,6 +132,27 @@ class AppMainWindow(QMainWindow):
         print("PLAYING...")
         self.play_mp3_media(result_url)
         self.show_talking_animation()
+    
+    def control_next_action(self):
+        '''
+        Control the next action to be executed after the current action is done.
+        '''
+        if len(self.action_queue) == 0:
+            return
+        next_action = self.action_queue[0]
+
+        if next_action == 1:
+            self.do_initial_talk()
+        elif next_action == 2:
+            self.record_and_play()
+        elif next_action == 3:
+            self.do_second_talk()
+        elif next_action == 4:
+            raise Exception("Unimplemented action")
+        elif next_action == 5:
+            self.do_final_talk()
+        else:
+            raise Exception("Invalid action")
         
 
     '''
@@ -146,15 +171,8 @@ class AppMainWindow(QMainWindow):
         '''
 
         if event.key() == Qt.Key.Key_1:
-            self.audio_queue = [
-                os.path.abspath(f"./data/audio/{self.language}/1.mp3"),
-                os.path.abspath(f"./data/audio/{self.language}/2.mp3"),
-                os.path.abspath(f"./data/audio/{self.language}/3.mp3"),
-                os.path.abspath(f"./data/audio/{self.language}/8_1.mp3"),
-                os.path.abspath(f"./data/audio/{self.language}/8_2.mp3"),
-                os.path.abspath(f"./data/audio/{self.language}/8_3.mp3"),
-            ]
-            self.talk()
+            self.action_queue = [1, 2, 3, 5]
+            self.control_next_action()
     
     def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
         '''
@@ -200,13 +218,49 @@ class AppMainWindow(QMainWindow):
                 self.audio_queue.pop(0)
             if len(self.audio_queue) == 0:
                 self.show_idle_animation()
-                return
+                if len(self.action_queue) > 1:
+                    self.action_queue.pop(0)
+                    self.control_next_action()
             self.talk()
     
     '''
     Utility functions
     This section contains helper functions used for various purposes in the application.
     '''
+    def do_initial_talk(self):
+        '''
+        Perform initial talk by setting up audio and action queues and calling the talk method.
+        '''
+        self.audio_queue = [
+            os.path.abspath(f"./data/audio/{self.language}/1.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/2.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/3.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/8_1.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/8_2.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/8_3.mp3"),
+        ]
+        self.talk()
+
+    def do_second_talk(self):
+        '''
+        Perform second talk by setting up audio and action queues and calling the talk method.
+        '''
+        self.audio_queue = [
+            os.path.abspath(f"./data/audio/{self.language}/6.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/7.mp3"),
+        ]
+        self.talk()
+
+    def do_final_talk(self):
+        '''
+        Perform final talk by setting up audio and action queues and calling the talk method.
+        '''
+        self.audio_queue = [
+            os.path.abspath(f"./data/audio/{self.language}/9.mp3"),
+            os.path.abspath(f"./data/audio/{self.language}/10.mp3"),
+        ]
+        self.talk()
+
     def play_mp3_media(self, url: str):
         '''
         Downloads an MP3 file from the given URL and plays it using an audio player.
