@@ -3,7 +3,7 @@ import requests
 import sys
 import time
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QGraphicsOpacityEffect
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl, QTimer
@@ -32,8 +32,8 @@ class AppMainWindow(QMainWindow):
         self.video_paths = [idle_path, talk_path]
         
         # Initialize the used language
-        self.language = "en"
-        # self.language = "jp"
+        # self.language = "en"
+        self.language = "jp"
 
         # Initialize the UI
         self.init_UI()
@@ -79,13 +79,62 @@ class AppMainWindow(QMainWindow):
         # Video widget modification
         # Make the video widget transparent
         self.video_widget_idle.setAttribute(Qt.WA_TranslucentBackground)
-        self.video_widget_idle.setStyleSheet("background-color: white;")
+        self.video_widget_talk.setAttribute(Qt.WA_TranslucentBackground)
+
+        # Overlay timer
+        self.timer_counter = 0
+
+        self.overlay_timer_container = QWidget(self.video_widget_idle)
+        self.overlay_timer_container.setFixedSize(120, 50)
+        self.overlay_timer_container.move(self.video_widget_idle.width() // 2 - self.overlay_timer_container.width(), 0)
+        # self.overlay_timer_container.setStyleSheet("background: grey")
+        self.overlay_timer_container.setAttribute(Qt.WA_TranslucentBackground)
+        self.overlay_timer_container.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+
+        self.overlay_timer_layout = QHBoxLayout()
+        self.overlay_timer_container.setLayout(self.overlay_timer_layout)
+
+        self.recording_indicator = QLabel("REC", self.overlay_timer_container)
+        self.recording_indicator.setStyleSheet("color: red; font-size: 16px; background: transparent; padding: 0px; margin: 0px;")
+        self.recording_indicator.setAttribute(Qt.WA_TranslucentBackground)
+        self.recording_indicator.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.recording_indicator.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+
+        self.timer_label = QLabel(f"00:0{self.timer_counter}", self.overlay_timer_container)
+        self.timer_label.setStyleSheet("font-size: 16px; background: transparent; padding: 0px; margin: 0 px;")
+        self.timer_label.setAttribute(Qt.WA_TranslucentBackground)
+        self.timer_label.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.timer_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        self.overlay_timer_layout.addWidget(self.recording_indicator)
+        self.overlay_timer_layout.addWidget(self.timer_label)
+        self.opacity_effect = QGraphicsOpacityEffect()
+        self.opacity_effect.setOpacity(0)
+        self.overlay_timer_container.setGraphicsEffect(self.opacity_effect)
+        self.overlay_timer_container.hide()
+
+        # Overlay transcription_text
+        self.transcription_text_overlay = QLabel("Initial Transcription Text", self.video_widget_idle)
+        self.transcription_text_overlay.setStyleSheet("""
+            color: white;
+            background-color: black;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 4px;
+        """)
+        self.transcription_text_overlay.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.transcription_text_overlay.setFixedWidth(530)
+        self.transcription_text_overlay.setFixedHeight(50)
+        self.transcription_text_overlay.move(0,760)  # Move to bottom
+        self.transcription_text_overlay.hide()
 
         # Self media state changed
         self.video_player_idle.stateChanged.connect(self.handle_event_video_idle_stopped)
         self.video_player_talk.stateChanged.connect(self.handle_event_video_talk_stopped)
         self.audio_player.stateChanged.connect(self.handle_event_audio_stopped)
         self.video_widget_talk.hide()
+
+        self.setStyleSheet("QWidget { background: transparent; }")
 
     '''
     Main functions
@@ -113,12 +162,10 @@ class AppMainWindow(QMainWindow):
         if self.video_widget_talk.isHidden():
             self.show_talking_animation()
 
-    def record_and_play(self):
+    def exec_recording(self):
         '''
         Records audio, execute voice change, and play the modified audio.
-
-        This method starts recording audio, executes voice change, then
-        fetches the modified audio file, and plays the audio while showing a talking animation.
+        Then, also writes what's being said in the audio.
         '''
         # Disable the record button and start recording
         print("RECORDING...")
@@ -127,12 +174,24 @@ class AppMainWindow(QMainWindow):
         record()
         print("RECORDING DONE")
         result_url = exec_voice_change()
+        text = recognize_speech()
+        self.transcription_text_overlay.setText(text)
 
         # Call the API to fetch the MP3 file and play the audio
         print("PLAYING...")
         self.play_mp3_media(result_url)
         self.show_talking_animation()
+        print(text)
+        print()
     
+    def exec_recording_animation(self):
+        '''
+        Executes the recording animation.
+        
+        This method is responsible for executing the recording animation. It performs the necessary actions to start the recording process and display the animation on the screen.
+        '''
+        self.timer_counter = 5
+
     def control_next_action(self):
         '''
         Control the next action to be executed after the current action is done.
@@ -144,13 +203,15 @@ class AppMainWindow(QMainWindow):
         if next_action == 1:
             self.do_initial_talk()
         elif next_action == 2:
-            self.record_and_play()
+            self.exec_recording()
         elif next_action == 3:
             self.do_second_talk()
         elif next_action == 4:
-            raise Exception("Unimplemented action")
+            self.show_transcription_text()
         elif next_action == 5:
             self.do_final_talk()
+        elif next_action == 6:
+            self.show_recording_animation()
         else:
             raise Exception("Invalid action")
         
@@ -169,12 +230,14 @@ class AppMainWindow(QMainWindow):
         Returns:
             None
         '''
-
         if event.key() == Qt.Key.Key_1:
-            self.action_queue = [1, 2, 3, 5]
+            self.action_queue = [1, 2, 3, 4, 5]
             self.control_next_action()
         elif event.key() == Qt.Key.Key_2:
             self.action_queue = [3, 5]
+            self.control_next_action()
+        elif event.key() == Qt.Key.Key_3:
+            self.action_queue = [6]
             self.control_next_action()
     
     def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
@@ -227,10 +290,49 @@ class AppMainWindow(QMainWindow):
                     self.action_queue.pop(0)
                     self.control_next_action()
     
+    def handle_transcription_timer_timeout(self):
+        '''
+        Handle the transcription timer timeout event.
+        '''
+        self.transcription_text_overlay.hide()
+        if len(self.action_queue) > 1:
+            self.action_queue.pop(0)
+            self.control_next_action()
+
     '''
     Utility functions
     This section contains helper functions used for various purposes in the application.
     '''
+    def show_recording_animation(self):
+        '''
+        Show it will be recorded animation
+        '''
+        # Setup the fade-in animation
+        self.overlay_timer_container.show()
+        self.recording_timer = QTimer(self)
+        self.recording_timer.timeout.connect(self.fadeIn)
+        self.recording_timer.start(50)  # Adjust the interval to control the speed of the fade-in
+        self.timer_opacity = 0
+
+    def show_transcription_text(self):
+        '''
+        Show the transcription text overlay
+        '''
+        self.transcription_text_overlay.show()
+        self.transcription_timer = QTimer(self)
+        self.transcription_timer.timeout.connect(self.handle_transcription_timer_timeout)
+        self.transcription_timer.start(3000)
+
+    def fadeIn(self):
+        '''
+        Handling the fade in animation
+        '''
+        if self.timer_opacity >= 1:
+            self.recording_timer.stop()  # Stop the timer if the maximum opacity is reached
+        else:
+            self.timer_opacity += 0.05  # Increase opacity
+            self.opacity_effect.setOpacity(self.timer_opacity)
+    
     def do_initial_talk(self):
         '''
         Perform initial talk by setting up audio and action queues and calling the talk method.

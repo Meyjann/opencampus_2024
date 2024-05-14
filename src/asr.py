@@ -19,4 +19,4 @@ def recognize_speech() -> str:
     audio = audio_from_path(os.path.abspath('output.wav'))
 
     ret = transcribe(model, audio)
-    return ret
+    return ret.text
