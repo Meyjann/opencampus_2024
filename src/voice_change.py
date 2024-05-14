@@ -81,7 +81,7 @@ def play_audio(filename: str = WAVE_OUTPUT_FILENAME):
     stream.close()
     audio.terminate()
 
-def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filename: str = WAVE_OUTPUT_FILENAME, lenguage: str = "en") -> str:
+def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filename: str = WAVE_OUTPUT_FILENAME, language: str = "en") -> str:
     '''
     Perform text-to-speech using the STEN TTS API.
 
@@ -93,7 +93,7 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
     audio_binary_base64 = base64.b64encode(audio_binary.read())
     text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
 
-    code_lang = "english" if lenguage == "en" else "japanese"
+    code_lang = "english" if language == "en" else "japanese"
 
     data = {
         'text': text,
