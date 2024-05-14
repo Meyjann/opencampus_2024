@@ -5,6 +5,8 @@ This file is the main entry point for the project.
 
 import sys
 
+from PyQt5.QtWidgets import QApplication
+
 from src import *
 
 
@@ -19,4 +21,8 @@ if __name__ == '__main__':
         else:
             raise Exception("Invalid command name.")
     else:
-        raise Exception("Invalid number of arguments.")
+        app = QApplication(sys.argv)
+        window = AppMainWindow()
+        window.show()
+        sys.exit(app.exec_())
+

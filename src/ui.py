@@ -1,22 +1,29 @@
+'''
+ui.py
+
+This module contains the User Interface class, which is responsible for showing the user the current state of the application.
+'''
+
 import os
 import requests
 import sys
 import time
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QGraphicsOpacityEffect
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QGraphicsOpacityEffect
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl, QTimer
-from PyQt5.QtGui import QPixmap
 
-from src import *
+from .asr import recognize_speech
+from .constant import *
+from .voice_change import record, exec_voice_change
 
 class AppMainWindow(QMainWindow):
     '''
     AppMainWindow
     This class is the main window of the application. It contains the widgets (especially the video widget) to run the program.
     '''
-    def __init__(self):
+    def __init__(self, language = ""):
         '''
         Constructor
         This method initializes the application.
@@ -27,13 +34,16 @@ class AppMainWindow(QMainWindow):
         self.action_queue = []
 
         # Set the video paths
-        idle_path = os.path.abspath("./data/video/idle_vid.mov")
-        talk_path = os.path.abspath("./data/video/talk_vid.mov")
+        idle_path = os.path.abspath(IDLE_VIDEO_PATH)
+        talk_path = os.path.abspath(TALK_VIDEO_PATH)
         self.video_paths = [idle_path, talk_path]
         
         # Initialize the used language
-        # self.language = "en"
-        self.language = "jp"
+        self.language = language
+        if self.language == "":
+            # self.language = "en"
+            self.language = "jp"
+        self.audio_folder = os.path.abspath(f"{AUDIO_FOLDER}/{self.language}")
 
         # Initialize the UI
         self.init_UI()
@@ -338,12 +348,12 @@ class AppMainWindow(QMainWindow):
         Perform initial talk by setting up audio and action queues and calling the talk method.
         '''
         self.audio_queue = [
-            os.path.abspath(f"./data/audio/{self.language}/1.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/2.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/3.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/8_1.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/8_2.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/8_3.mp3"),
+            os.path.abspath(f"{self.audio_folder}/1.mp3"),
+            os.path.abspath(f"{self.audio_folder}/2.mp3"),
+            os.path.abspath(f"{self.audio_folder}/3.mp3"),
+            os.path.abspath(f"{self.audio_folder}/8_1.mp3"),
+            os.path.abspath(f"{self.audio_folder}/8_2.mp3"),
+            os.path.abspath(f"{self.audio_folder}/8_3.mp3"),
         ]
         self.talk()
 
@@ -352,8 +362,8 @@ class AppMainWindow(QMainWindow):
         Perform second talk by setting up audio and action queues and calling the talk method.
         '''
         self.audio_queue = [
-            os.path.abspath(f"./data/audio/{self.language}/6.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/7.mp3"),
+            os.path.abspath(f"{self.audio_folder}/6.mp3"),
+            os.path.abspath(f"{self.audio_folder}/7.mp3"),
         ]
         time.sleep(0.5)
         self.talk()
@@ -363,8 +373,8 @@ class AppMainWindow(QMainWindow):
         Perform final talk by setting up audio and action queues and calling the talk method.
         '''
         self.audio_queue = [
-            os.path.abspath(f"./data/audio/{self.language}/9.mp3"),
-            os.path.abspath(f"./data/audio/{self.language}/10.mp3"),
+            os.path.abspath(f"{self.audio_folder}/9.mp3"),
+            os.path.abspath(f"{self.audio_folder}/10.mp3"),
         ]
         self.talk()
 
@@ -381,11 +391,11 @@ class AppMainWindow(QMainWindow):
         response = requests.get(url)
         if response.status_code == 200:
             # Save the MP3 file locally
-            with open("audio.mp3", "wb") as f:
+            with open(WAVE_OUTPUT_FILENAME, "wb") as f:
                 f.write(response.content)
             
             # Load and play the MP3 file
-            self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath("audio.mp3"))))
+            self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(WAVE_OUTPUT_FILENAME))))
             self.audio_player.play()
         else:
             print("Failed to fetch MP3 file")
