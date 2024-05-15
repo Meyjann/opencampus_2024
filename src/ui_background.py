@@ -34,7 +34,7 @@ class BackgroundThread(QThread):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
-    def __init__(self, function: function, args: list):
+    def __init__(self, target_function, args: list):
         '''
         Initializes the BackgroundThreadWithArgs class.
 
@@ -44,7 +44,7 @@ class BackgroundThread(QThread):
         '''
         super().__init__()
         self.signal = Signal(bool, str)
-        self.function = function
+        self.function = target_function
         self.args = args
 
     def run(self):
