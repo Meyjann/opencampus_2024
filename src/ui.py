@@ -17,6 +17,10 @@ from PyQt5.QtCore import Qt, QUrl, QTimer
 from .asr import recognize_speech
 from .constant import *
 from .voice_change import record, exec_voice_change
+from .ui_background import *
+
+def merge_task():
+    print("All tasks have been completed")
 
 class AppMainWindow(QMainWindow):
     '''
@@ -29,9 +33,11 @@ class AppMainWindow(QMainWindow):
         This method initializes the application.
         '''
         super().__init__()
-        # Set the audio and action queue
+
+        # Set the audio, action queue, and task counter
         self.audio_queue = []
         self.action_queue = []
+        self.tasks_completed = 0
 
         # Set the video paths
         idle_path = os.path.abspath(IDLE_VIDEO_PATH)
@@ -317,12 +323,18 @@ class AppMainWindow(QMainWindow):
         '''
         Show it will be recorded animation
         '''
-        # Setup the fade-in animation
+        self.timer_counter = 0
+        self.blink_counter = 0
+        self.timer_opacity = 0
+        self.opacity_effect.setOpacity(self.timer_opacity)
+
+        # Setup the fade-in animation3
+        self.timer_label.setText(f"00:0{self.timer_counter}")
         self.overlay_timer_container.show()
+        self.recording_indicator.setVisible(True)
         self.recording_timer = QTimer(self)
         self.recording_timer.timeout.connect(self.fadeIn)
-        self.recording_timer.start(50)  # Adjust the interval to control the speed of the fade-in
-        self.timer_opacity = 0
+        self.recording_timer.start(10)  # Adjust the interval to control the speed of the fade-in
 
     def show_transcription_text(self):
         '''
@@ -339,10 +351,38 @@ class AppMainWindow(QMainWindow):
         '''
         if self.timer_opacity >= 1:
             self.recording_timer.stop()  # Stop the timer if the maximum opacity is reached
+            self.blink_recording()
         else:
-            self.timer_opacity += 0.05  # Increase opacity
+            self.timer_opacity += 0.1  # Increase opacity
             self.opacity_effect.setOpacity(self.timer_opacity)
     
+    def blink_recording(self):
+        '''
+        This section handles the animation for blinking in the recording
+        '''
+        self.timer_counter = 0
+        self.blink_counter = 0
+        self.recording_timer.start(BLINK_MS)
+        self.recording_timer.timeout.connect(self.blink)
+
+    def blink(self):
+        '''
+        This is the basic function called during the blink timeout
+        '''
+        self.blink_counter += BLINK_MS
+        timer_counter = 0
+        timer_counter += self.blink_counter // 1000
+        if timer_counter != self.timer_counter:
+            self.timer_counter = timer_counter
+            self.timer_label.setText(f"00:0{self.timer_counter}")
+        if self.timer_counter < RECORD_SECONDS:
+            self.recording_indicator.isVisible = not self.recording_indicator.isVisible
+            self.recording_indicator.setVisible(self.recording_indicator.isVisible)
+        else:
+            self.recording_timer.stop()
+            self.recording_timer.timeout.connect(self.fadeIn)
+            self.overlay_timer_container.hide()
+
     def do_initial_talk(self):
         '''
         Perform initial talk by setting up audio and action queues and calling the talk method.
@@ -429,6 +469,15 @@ class AppMainWindow(QMainWindow):
         '''
         self.video_widget_idle.hide()
         self.video_widget_talk.show()
+    
+    def task_finished(self, task_counter = 2, next_func = merge_task):
+        '''
+        Default functions to be called when tasks are finished
+        '''
+        self.tasks_completed += 1
+        if self.tasks_completed == task_counter:
+            self.tasks_completed = 0
+            next_func()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
