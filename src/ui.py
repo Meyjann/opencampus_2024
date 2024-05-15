@@ -39,6 +39,9 @@ class AppMainWindow(QMainWindow):
         self.action_queue = []
         self.tasks_completed = 0
 
+        self.recognized_text = ""
+        self.result_url = ""
+
         # Set the video paths
         idle_path = os.path.abspath(IDLE_VIDEO_PATH)
         talk_path = os.path.abspath(TALK_VIDEO_PATH)
@@ -180,33 +183,43 @@ class AppMainWindow(QMainWindow):
 
     def exec_recording(self):
         '''
-        Records audio, execute voice change, and play the modified audio.
-        Then, also writes what's being said in the audio.
+        Records audio and saves the recorded audio
         '''
-        # Disable the record button and start recording
-        print("RECORDING...")
+        # Initialize job thread
+        self.background_task1 = TaskRecordAudio()
+        self.background_thread1 = QThread()
+        self.background_task1.moveToThread(self.background_thread1)
 
-        # Record the audio and execute voice change
-        record()
-        print("RECORDING DONE")
-        result_url = exec_voice_change()
-        text = recognize_speech()
-        self.transcription_text_overlay.setText(text)
+        self.background_thread1.started.connect(self.background_task1.run)
+        self.background_task1.signal.connect(self.recording_manager)
+        self.background_task1.signal.connect(self.background_thread1.quit)
 
+        print("RECORDING...") 
+        self.background_thread1.start()
+        self.show_recording_animation()
+
+    def do_tts_and_asr(self):
+        '''
+        Executes voice change and speech recognition
+        Saves the modifed audio
+        '''
+        print("TRANSCRIPTING AND GENERATING SPEECH...")
+        self.result_url = exec_voice_change()
+        self.recognized_text = recognize_speech()
+        self.transcription_text_overlay.setText(self.recognized_text)
+
+        self.play_modified_audio()
+
+    def play_modified_audio(self):
+        '''
+        Play the saved modified audio
+        '''
         # Call the API to fetch the MP3 file and play the audio
         print("PLAYING...")
-        self.play_mp3_media(result_url)
+        self.play_mp3_media(self.result_url)
         self.show_talking_animation()
-        print(text)
+        print(self.recognized_text)
         print()
-    
-    def exec_recording_animation(self):
-        '''
-        Executes the recording animation.
-        
-        This method is responsible for executing the recording animation. It performs the necessary actions to start the recording process and display the animation on the screen.
-        '''
-        self.timer_counter = 5
 
     def control_next_action(self):
         '''
@@ -382,6 +395,7 @@ class AppMainWindow(QMainWindow):
             self.recording_timer.stop()
             self.recording_timer.timeout.connect(self.fadeIn)
             self.overlay_timer_container.hide()
+            self.recording_manager(True, "Successful recording animation")
 
     def do_initial_talk(self):
         '''
@@ -470,14 +484,14 @@ class AppMainWindow(QMainWindow):
         self.video_widget_idle.hide()
         self.video_widget_talk.show()
     
-    def task_finished(self, task_counter = 2, next_func = merge_task):
+    def recording_manager(self, success, message):
         '''
-        Default functions to be called when tasks are finished
+        Manages when the recording task is finished
         '''
         self.tasks_completed += 1
-        if self.tasks_completed == task_counter:
+        if self.tasks_completed == 2: # Both the recording and the UI animation
             self.tasks_completed = 0
-            next_func()
+            self.do_tts_and_asr()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

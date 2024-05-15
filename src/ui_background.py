@@ -4,7 +4,7 @@ ui_background.py
 This file manages the background threads for the UI.
 '''
 
-from PyQt5.QtCore import QThread, pyqtSignal as Signal
+from PyQt5.QtCore import QThread, pyqtSignal as Signal, QObject
 
 import requests
 
@@ -26,7 +26,7 @@ def fetch_synthesized_audio():
         raise Exception("Failed to fetch synthesized audio.")
 
 
-class BackgroundThread(QThread):
+class BackgroundWorker(QObject):
     '''
     A class to manage background threads for the UI.
 
@@ -34,6 +34,8 @@ class BackgroundThread(QThread):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
+    signal = Signal(bool, str)
+
     def __init__(self, target_function, args: list):
         '''
         Initializes the BackgroundThreadWithArgs class.
@@ -43,7 +45,6 @@ class BackgroundThread(QThread):
             args (list): The arguments to pass to the function.
         '''
         super().__init__()
-        self.signal = Signal(bool, str)
         self.function = target_function
         self.args = args
 
@@ -58,7 +59,7 @@ class BackgroundThread(QThread):
             self.signal.emit(False, e)
 
 
-class TaskRecordAudio(BackgroundThread):
+class TaskRecordAudio(BackgroundWorker):
     '''
     A class to manage background threads when recording audio for the UI.
 
@@ -78,7 +79,7 @@ class TaskRecordAudio(BackgroundThread):
         args = []
         super().__init__(function, args)
 
-class TaskFetchSynthesizedAudio(BackgroundThread):
+class TaskFetchSynthesizedAudio(BackgroundWorker):
     '''
     A class to manage background threads when fetching synthesized audio for the UI.
 
@@ -99,7 +100,7 @@ class TaskFetchSynthesizedAudio(BackgroundThread):
         super().__init__(function, args)
 
 
-class TaskGenerateAudioTranscription(BackgroundThread):
+class TaskGenerateAudioTranscription(BackgroundWorker):
     '''
     A class to manage background threads when generating audio transcription for the UI.
 
