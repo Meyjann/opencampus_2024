@@ -17,7 +17,7 @@ def fetch_synthesized_audio():
     '''
     Mimic the voice of the user.
     '''
-    url = exec_voice_change()
+    url = exec_voice_change(language = "jp")
     response = requests.get(url)
     if response.status_code == 200:
         with open(WAVE_OUTPUT_FILENAME, "wb") as f:
@@ -34,9 +34,9 @@ class BackgroundWorker(QObject):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
-    signal = Signal(bool, str)
+    signal = Signal(bool, str, int)
 
-    def __init__(self, target_function, args: list):
+    def __init__(self, target_function, args: list, task_num: int = 1):
         '''
         Initializes the BackgroundThreadWithArgs class.
 
@@ -47,6 +47,7 @@ class BackgroundWorker(QObject):
         super().__init__()
         self.function = target_function
         self.args = args
+        self.task_num = task_num
 
     def run(self):
         '''
@@ -54,9 +55,9 @@ class BackgroundWorker(QObject):
         '''
         try:
             response = self.function(*self.args)
-            self.signal.emit(True, response)
+            self.signal.emit(True, response, self.task_num)
         except Exception as e:
-            self.signal.emit(False, e)
+            self.signal.emit(False, e, self.task_num)
 
 
 class TaskRecordAudio(BackgroundWorker):
@@ -67,7 +68,7 @@ class TaskRecordAudio(BackgroundWorker):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
-    def __init__(self):
+    def __init__(self, task_num = 1):
         '''
         Initializes the BackgroundThreadWithArgs class.
 
@@ -77,7 +78,7 @@ class TaskRecordAudio(BackgroundWorker):
         '''
         function = record
         args = []
-        super().__init__(function, args)
+        super().__init__(function, args, task_num)
 
 class TaskFetchSynthesizedAudio(BackgroundWorker):
     '''
@@ -87,7 +88,7 @@ class TaskFetchSynthesizedAudio(BackgroundWorker):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
-    def __init__(self, audio_url = str):
+    def __init__(self, task_num = 1):
         '''
         Initializes the BackgroundThreadWithArgs class.
 
@@ -96,8 +97,8 @@ class TaskFetchSynthesizedAudio(BackgroundWorker):
             args (list): The arguments to pass to the function.
         '''
         function = fetch_synthesized_audio
-        args = [audio_url]
-        super().__init__(function, args)
+        args = []
+        super().__init__(function, args, task_num)
 
 
 class TaskGenerateAudioTranscription(BackgroundWorker):
@@ -108,7 +109,7 @@ class TaskGenerateAudioTranscription(BackgroundWorker):
         function (function): The function to run in the background thread.
         args (list): The arguments to pass to the function.
     '''
-    def __init__(self):
+    def __init__(self, task_num = 2):
         '''
         Initializes the BackgroundThreadWithArgs class.
 
@@ -118,4 +119,4 @@ class TaskGenerateAudioTranscription(BackgroundWorker):
         '''
         function = recognize_speech
         args = []
-        super().__init__(function, args)
+        super().__init__(function, args, task_num)

@@ -94,6 +94,7 @@ class AppMainWindow(QMainWindow):
 
         # Create a QMediaPlayer to control the audio playback
         self.audio_player = QMediaPlayer()
+        self.audio_player_2 = QMediaPlayer()
 
         # Video widget modification
         # Make the video widget transparent
@@ -151,6 +152,7 @@ class AppMainWindow(QMainWindow):
         self.video_player_idle.stateChanged.connect(self.handle_event_video_idle_stopped)
         self.video_player_talk.stateChanged.connect(self.handle_event_video_talk_stopped)
         self.audio_player.stateChanged.connect(self.handle_event_audio_stopped)
+        self.audio_player_2.stateChanged.connect(self.handle_event_audio_stopped_2)
         self.video_widget_talk.hide()
 
         self.setStyleSheet("QWidget { background: transparent; }")
@@ -203,12 +205,38 @@ class AppMainWindow(QMainWindow):
         Executes voice change and speech recognition
         Saves the modifed audio
         '''
-        print("TRANSCRIPTING AND GENERATING SPEECH...")
-        self.result_url = exec_voice_change()
-        self.recognized_text = recognize_speech()
-        self.transcription_text_overlay.setText(self.recognized_text)
+        # Initialize job thread for synthesizing audio
+        self.background_task2 = TaskFetchSynthesizedAudio(task_num = 1)
+        self.background_thread2 = QThread()
+        self.background_task2.moveToThread(self.background_thread2)
 
-        self.play_modified_audio()
+        self.background_thread2.started.connect(self.background_task2.run)
+        self.background_task2.signal.connect(self.ai_process_manager)
+        self.background_task2.signal.connect(self.background_thread2.quit)
+
+        # Initialize job thread for transcription
+        self.background_task3 = TaskGenerateAudioTranscription(task_num = 2)
+        self.background_thread3 = QThread()
+        self.background_task3.moveToThread(self.background_thread3)
+
+        self.background_thread3.started.connect(self.background_task3.run)
+        self.background_task3.signal.connect(self.ai_process_manager)
+        self.background_task3.signal.connect(self.background_thread3.quit)
+
+        # Executing all jobs at the same time
+        print("TRANSCRIPTING AND GENERATING SPEECH...")
+        self.background_thread2.start()
+        self.background_thread3.start()
+
+        audio_file = os.path.abspath(f"{self.audio_folder}/4.mp3")
+        self.audio_player_2.setMedia(QMediaContent(QUrl.fromLocalFile(audio_file)))
+        self.audio_player_2.play()
+        self.show_talking_animation()
+
+        # self.result_url = exec_voice_change()
+        # self.recognized_text = recognize_speech()
+        # self.play_modified_audio()
+
 
     def play_modified_audio(self):
         '''
@@ -216,7 +244,8 @@ class AppMainWindow(QMainWindow):
         '''
         # Call the API to fetch the MP3 file and play the audio
         print("PLAYING...")
-        self.play_mp3_media(self.result_url)
+        # self.play_mp3_media(self.result_url)
+        self.play_mp3_media_2()
         self.show_talking_animation()
         print(self.recognized_text)
         print()
@@ -318,6 +347,21 @@ class AppMainWindow(QMainWindow):
                 if len(self.action_queue) > 1:
                     self.action_queue.pop(0)
                     self.control_next_action()
+
+    def handle_event_audio_stopped_2(self, state):
+        '''
+        Handle the event when the audio is stopped.
+        By default, the idle animation will be shown and the record button will be enabled.
+
+        Parameters:
+            state (QMediaPlayer.State): The state of the audio player.
+
+        Returns:
+            None
+        '''
+        if state == QMediaPlayer.State.StoppedState:
+            self.show_idle_animation()
+            self.ai_process_manager(True, "Successful audio rendering", 0)
     
     def handle_transcription_timer_timeout(self):
         '''
@@ -395,7 +439,7 @@ class AppMainWindow(QMainWindow):
             self.recording_timer.stop()
             self.recording_timer.timeout.connect(self.fadeIn)
             self.overlay_timer_container.hide()
-            self.recording_manager(True, "Successful recording animation")
+            self.recording_manager(True, "Successful recording animation", 0)
 
     def do_initial_talk(self):
         '''
@@ -454,6 +498,19 @@ class AppMainWindow(QMainWindow):
         else:
             print("Failed to fetch MP3 file")
         print() # Break line
+
+    def play_mp3_media_2(self):
+        '''
+        Downloads an MP3 file from the given URL and plays it using an audio player.
+
+        Args:
+            url (str): The URL of the MP3 file to be played.
+
+        Returns:
+            None
+        '''
+        self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(WAVE_OUTPUT_FILENAME))))
+        self.audio_player.play()
     
     def rerun_video(self, video_player: QMediaPlayer):
         '''
@@ -484,7 +541,7 @@ class AppMainWindow(QMainWindow):
         self.video_widget_idle.hide()
         self.video_widget_talk.show()
     
-    def recording_manager(self, success, message):
+    def recording_manager(self, success: bool, message: str, task_num: int = 0):
         '''
         Manages when the recording task is finished
         '''
@@ -492,6 +549,23 @@ class AppMainWindow(QMainWindow):
         if self.tasks_completed == 2: # Both the recording and the UI animation
             self.tasks_completed = 0
             self.do_tts_and_asr()
+
+    def ai_process_manager(self, success: bool, message: str, task_num: int = 0):
+        '''
+        Manages when the process task is finished
+        '''
+        if not success:
+            raise Exception("Unimplmented case when there is failure when synthesis and transcription")
+
+        if task_num == 2:
+            self.recognized_text = message
+            self.transcription_text_overlay.setText(self.recognized_text)
+            print(self.recognized_text)
+
+        self.tasks_completed += 1
+        if self.tasks_completed == 3: # Synthesis, transcription and the UI recording
+            self.tasks_completed = 0
+            self.play_modified_audio()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
