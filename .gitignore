@@ -172,4 +172,4 @@ data/video/
 .DS_Store
 
 # Output files
-output.wav
+*.wav
