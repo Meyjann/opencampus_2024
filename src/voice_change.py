@@ -91,7 +91,8 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
     '''
     audio_binary = open(source_filename, 'rb') #open binary file in read mode
     audio_binary_base64 = base64.b64encode(audio_binary.read())
-    text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
+    # text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
+    text = "このデモはHAI研究室の音声合成技術を使用しています。"
 
     code_lang = "english" if language == "en" else "japanese"
 

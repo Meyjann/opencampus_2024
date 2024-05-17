@@ -1,1 +1,1 @@
-In this demo, I'm going to listen and understand what you say, then imitate your voice.
+When synthesizing speech, I will speak imitation of your voice.

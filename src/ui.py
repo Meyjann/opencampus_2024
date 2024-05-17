@@ -110,18 +110,20 @@ class AppMainWindow(QMainWindow):
         # self.overlay_timer_container.setStyleSheet("background: grey")
         self.overlay_timer_container.setAttribute(Qt.WA_TranslucentBackground)
         self.overlay_timer_container.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.overlay_timer_container.setFixedWidth(200)
 
         self.overlay_timer_layout = QHBoxLayout()
         self.overlay_timer_container.setLayout(self.overlay_timer_layout)
 
-        self.recording_indicator = QLabel("REC", self.overlay_timer_container)
+        self.recording_indicator = QLabel("RECORDING", self.overlay_timer_container)
         self.recording_indicator.setStyleSheet("color: red; font-size: 16px; background: transparent; padding: 0px; margin: 0px;")
         self.recording_indicator.setAttribute(Qt.WA_TranslucentBackground)
         self.recording_indicator.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.recording_indicator.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.recording_indicator.setFixedWidth(100)
 
         self.timer_label = QLabel(f"00:0{self.timer_counter}", self.overlay_timer_container)
-        self.timer_label.setStyleSheet("font-size: 16px; background: transparent; padding: 0px; margin: 0 px;")
+        self.timer_label.setStyleSheet("font-size: 20px; background: transparent; padding: 0px; margin: 0 px;")
         self.timer_label.setAttribute(Qt.WA_TranslucentBackground)
         self.timer_label.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -129,7 +131,7 @@ class AppMainWindow(QMainWindow):
         self.overlay_timer_layout.addWidget(self.recording_indicator)
         self.overlay_timer_layout.addWidget(self.timer_label)
         self.opacity_effect = QGraphicsOpacityEffect()
-        self.opacity_effect.setOpacity(0)
+        self.opacity_effect.setOpacity(1)
         self.overlay_timer_container.setGraphicsEffect(self.opacity_effect)
         self.overlay_timer_container.hide()
 
@@ -138,14 +140,14 @@ class AppMainWindow(QMainWindow):
         self.transcription_text_overlay.setStyleSheet("""
             color: white;
             background-color: black;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             padding: 4px;
         """)
         self.transcription_text_overlay.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
-        self.transcription_text_overlay.setFixedWidth(530)
+        self.transcription_text_overlay.setFixedWidth(self.width())
         self.transcription_text_overlay.setFixedHeight(50)
-        self.transcription_text_overlay.move(0,760)  # Move to bottom
+        self.transcription_text_overlay.move(0,self.height() - self.transcription_text_overlay.height())  # Move to bottom
         self.transcription_text_overlay.hide()
 
         # Self media state changed
@@ -182,6 +184,12 @@ class AppMainWindow(QMainWindow):
 
         if self.video_widget_talk.isHidden():
             self.show_talking_animation()
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.overlay_timer_container.move(self.video_widget_idle.width() - self.overlay_timer_container.width(), self.video_widget_idle.height() // 2 - self.overlay_timer_container.height() // 2)
+        self.transcription_text_overlay.setFixedWidth(self.width())
+        self.transcription_text_overlay.move(0,self.video_widget_idle.height() - self.transcription_text_overlay.height() - self.video_widget_idle.height() // 2 - self.video_widget_idle.height() // 8)  # Move to bottom
 
     def exec_recording(self):
         '''
@@ -254,6 +262,7 @@ class AppMainWindow(QMainWindow):
         '''
         Control the next action to be executed after the current action is done.
         '''
+        print(self.action_queue)
         if len(self.action_queue) == 0:
             return
         next_action = self.action_queue[0]
@@ -288,14 +297,19 @@ class AppMainWindow(QMainWindow):
         Returns:
             None
         '''
+        if len(self.action_queue) > 0:
+            return
         if event.key() == Qt.Key.Key_1:
             self.action_queue = [1, 2, 3, 4, 5]
+            print("CALL 1")
             self.control_next_action()
         elif event.key() == Qt.Key.Key_2:
             self.action_queue = [3, 5]
+            print("CALL 2")
             self.control_next_action()
         elif event.key() == Qt.Key.Key_3:
             self.action_queue = [6]
+            print("CALL 3")
             self.control_next_action()
     
     def handle_event_video_idle_stopped(self, state: QMediaPlayer.State):
@@ -346,7 +360,10 @@ class AppMainWindow(QMainWindow):
                 self.show_idle_animation()
                 if len(self.action_queue) > 1:
                     self.action_queue.pop(0)
+                    print("CALL 4")
                     self.control_next_action()
+                else:
+                    self.action_queue = []
 
     def handle_event_audio_stopped_2(self, state):
         '''
@@ -370,7 +387,10 @@ class AppMainWindow(QMainWindow):
         self.transcription_text_overlay.hide()
         if len(self.action_queue) > 1:
             self.action_queue.pop(0)
+            print("CALL 5")
             self.control_next_action()
+        else:
+            self.action_queue = []
 
     '''
     Utility functions
@@ -399,6 +419,7 @@ class AppMainWindow(QMainWindow):
         '''
         self.transcription_text_overlay.show()
         self.transcription_timer = QTimer(self)
+        self.transcription_timer.setSingleShot(True)
         self.transcription_timer.timeout.connect(self.handle_transcription_timer_timeout)
         self.transcription_timer.start(3000)
 
@@ -452,7 +473,9 @@ class AppMainWindow(QMainWindow):
             os.path.abspath(f"{self.audio_folder}/8_1.mp3"),
             os.path.abspath(f"{self.audio_folder}/8_2.mp3"),
             os.path.abspath(f"{self.audio_folder}/8_3.mp3"),
+            os.path.abspath(f"{self.audio_folder}/8_4.mp3"),
         ]
+        print(self.audio_queue)
         self.talk()
 
     def do_second_talk(self):
