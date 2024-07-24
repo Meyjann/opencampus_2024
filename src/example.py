@@ -14,7 +14,7 @@ import pdb
 import ast
 import base64
 
-url = "https://ttspr.ai4med.vn/rest/tts_api_multilingual/v1"
+url = "http://163.221.176.238:9874/rest/tts_api_multilingual/v1"
 
 filename = "./reference_audio/439.wav"
 audio_binary = open(filename, 'rb') #open binary file in read mode
@@ -55,7 +55,7 @@ def call_stentts():
         response = requests.post(url, data=json.dumps(data), headers=headers)
         data = response.content
         data = ast.literal_eval(data.decode("utf-8"))
-        print(data["body"]["audio_path"])
+        print(data['body']['audio_path'])
 
 
 if __name__ == '__main__':

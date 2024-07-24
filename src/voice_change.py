@@ -12,6 +12,7 @@ import requests
 import wave
 import sounddevice as sd
 import numpy as np
+import time
 
 from pydub import AudioSegment
 from pydub.playback import play
@@ -40,10 +41,10 @@ def record(filename: str = WAVE_OUTPUT_FILENAME):
     print("Recording finished.")
 
     # Normalize to 16-bit range
-    audio_normalized = np.int16(audio / np.max(np.abs(audio)) * 32767)
+    # audio_normalized = np.int16(audio / np.max(np.abs(audio)) * 32767)
 
     # Save the recording into a WAV file
-    write(filename, sample_rate, audio_normalized)
+    write(filename, sample_rate, audio)
     print(f"File saved as {filename}.")
 
 def play_audio(filename: str = WAVE_OUTPUT_FILENAME):
@@ -95,6 +96,8 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
     text = "このデモはHAI研究室の音声合成技術を使用しています。"
 
     code_lang = "english" if language == "en" else "japanese"
+    if code_lang == "english":
+        text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
 
     data = {
         'text': text,
@@ -113,6 +116,48 @@ def exec_voice_change(source_filename: str = WAVE_OUTPUT_FILENAME, target_filena
     }
 
     response = requests.post(STEN_URL, data=json.dumps(data), headers=headers)
+    print(response)
+    data = response.content
+    data = ast.literal_eval(data.decode("utf-8"))
+    url_output = data["body"]["audio_path"]
+
+    return url_output
+
+def exec_voice_change2(source_filename: str = WAVE_OUTPUT_FILENAME, target_filename: str = WAVE_OUTPUT_FILENAME, language: str = "en") -> str:
+    '''
+    Perform text-to-speech using the STEN TTS API.
+
+    Args:
+        source_filename (str): The path to the source file name
+        target_filename (str): The path to the result file name
+    '''
+    audio_binary = open(source_filename, 'rb') #open binary file in read mode
+    audio_binary_base64 = base64.b64encode(audio_binary.read())
+    # text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
+    text = "このデモはHAI研究室の音声合成技術を使用しています。"
+
+    code_lang = "english" if language == "en" else "japanese"
+    if code_lang == "english":
+        text = "This speech was generated using STEN T.T.S. from H.A.I. Lab."
+
+    data = {
+        'text': text,
+        'speed': 1.0,
+        'voice': 'multilingual_diff_14',
+        'full_mp3': 1,
+        'language': code_lang,
+        'energy': 1.0,
+        'pitch': 1.0,
+        'reference': audio_binary_base64.decode('utf-8'),
+        'speaker_id': ''
+    }
+
+    headers = {
+        'Content-type': 'application/json',
+    }
+
+    response = requests.post(STEN_URL, data=json.dumps(data), headers=headers)
+    print(response)
     data = response.content
     data = ast.literal_eval(data.decode("utf-8"))
     url_output = data["body"]["audio_path"]

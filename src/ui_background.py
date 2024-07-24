@@ -17,13 +17,18 @@ def fetch_synthesized_audio():
     '''
     Mimic the voice of the user.
     '''
-    url = exec_voice_change(language = "jp")
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(WAVE_OUTPUT_FILENAME, "wb") as f:
-            f.write(response.content)
-    else:
-        raise Exception("Failed to fetch synthesized audio.")
+    try:
+        url = exec_voice_change(language = "jp")
+        print(url)
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(WAVE_OUTPUT_FILENAME, "wb") as f:
+                f.write(response.content)
+        else:
+            raise Exception("Failed to fetch synthesized audio.")
+    except Exception as e:
+        print(e)
+        print("FAILED TO CALL API")
 
 
 class BackgroundWorker(QObject):

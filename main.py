@@ -16,8 +16,16 @@ if __name__ == '__main__':
             call_stentts()
         elif sys.argv[1] == 'record':
             record()
-            result_url = exec_voice_change()
-            play_mp3_from_url(result_url)
+            # result_url = exec_voice_change()
+            # play_mp3_from_url(result_url)
+        elif sys.argv[1] == 'backup':
+            app = QApplication(sys.argv)
+            window = AppMainWindowBackup()
+            window.show()
+            sys.exit(app.exec_())
+        elif sys.argv[1] == 'exec_voice':
+            # exec_voice_change()
+            exec_voice_change2()
         else:
             raise Exception("Invalid command name.")
     else:

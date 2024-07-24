@@ -1,0 +1,1 @@
+After recognizing your speech, I will show the text of what you spoke.

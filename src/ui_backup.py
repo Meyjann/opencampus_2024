@@ -213,16 +213,14 @@ class AppMainWindow(QMainWindow):
         Executes voice change and speech recognition
         Saves the modifed audio
         '''
-        # Initialize job thread for synthesizing audio
-        self.background_task2 = TaskFetchSynthesizedAudio(task_num = 1)
-        self.background_thread2 = QThread()
-        self.background_task2.moveToThread(self.background_thread2)
+        # # Initialize job thread for synthesizing audio
+        # self.background_task2 = TaskFetchSynthesizedAudio(task_num = 1)
+        # self.background_thread2 = QThread()
+        # self.background_task2.moveToThread(self.background_thread2)
 
-        self.background_thread2.started.connect(self.background_task2.run)
-        self.background_task2.signal.connect(self.ai_process_manager)
-        self.background_task2.signal.connect(self.background_thread2.quit)
-
-        # fetch_synthesized_audio()
+        # self.background_thread2.started.connect(self.background_task2.run)
+        # self.background_task2.signal.connect(self.ai_process_manager)
+        # self.background_task2.signal.connect(self.background_thread2.quit)
 
         # Initialize job thread for transcription
         self.background_task3 = TaskGenerateAudioTranscription(task_num = 2)
@@ -235,10 +233,10 @@ class AppMainWindow(QMainWindow):
 
         # Executing all jobs at the same time
         print("TRANSCRIPTING AND GENERATING SPEECH...")
-        self.background_thread2.start()
+        # self.background_thread2.start()
         self.background_thread3.start()
 
-        audio_file = os.path.abspath(f"{self.audio_folder}/4.mp3")
+        audio_file = os.path.abspath(f"{self.audio_folder}/7.mp3")
         self.audio_player_2.setMedia(QMediaContent(QUrl.fromLocalFile(audio_file)))
         self.audio_player_2.play()
         self.show_talking_animation()
@@ -302,7 +300,7 @@ class AppMainWindow(QMainWindow):
         if len(self.action_queue) > 0:
             return
         if event.key() == Qt.Key.Key_1:
-            self.action_queue = [1, 2, 3, 4, 5]
+            self.action_queue = [1, 2, 4, 5]
             print("CALL 1")
             self.control_next_action()
         elif event.key() == Qt.Key.Key_2:
@@ -469,9 +467,9 @@ class AppMainWindow(QMainWindow):
         Perform initial talk by setting up audio and action queues and calling the talk method.
         '''
         self.audio_queue = [
-            os.path.abspath(f"{self.audio_folder}/1.mp3"),
-            os.path.abspath(f"{self.audio_folder}/2.mp3"),
-            os.path.abspath(f"{self.audio_folder}/3.mp3"),
+            os.path.abspath(f"{self.audio_folder}/1_2.mp3"),
+            os.path.abspath(f"{self.audio_folder}/2_2.mp3"),
+            # os.path.abspath(f"{self.audio_folder}/3.mp3"),
             os.path.abspath(f"{self.audio_folder}/8_1.mp3"),
             os.path.abspath(f"{self.audio_folder}/8_2.mp3"),
             os.path.abspath(f"{self.audio_folder}/8_3.mp3"),
@@ -485,7 +483,7 @@ class AppMainWindow(QMainWindow):
         Perform second talk by setting up audio and action queues and calling the talk method.
         '''
         self.audio_queue = [
-            os.path.abspath(f"{self.audio_folder}/6.mp3"),
+            # os.path.abspath(f"{self.audio_folder}/6.mp3"),
             os.path.abspath(f"{self.audio_folder}/7.mp3"),
         ]
         time.sleep(0.5)
@@ -588,9 +586,12 @@ class AppMainWindow(QMainWindow):
             print(self.recognized_text)
 
         self.tasks_completed += 1
-        if self.tasks_completed == 3: # Synthesis, transcription and the UI recording
+        if self.tasks_completed == 2: # Synthesis, transcription and the UI recording
             self.tasks_completed = 0
-            self.play_modified_audio()
+            # self.play_modified_audio()
+            self.action_queue.pop(0)
+            print("CALL BACKUP")
+            self.control_next_action()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
