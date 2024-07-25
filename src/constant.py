@@ -27,4 +27,4 @@ TALK_VIDEO_PATH = "./data/video/talk_vid.mov"
 '''
 STEN-TTS API
 '''
-STEN_URL = "http://163.221.176.238:9874/rest/tts_api_multilingual/v1"
+STEN_URL = "http://163.221.132.21:9874/rest/tts_api_multilingual/v1"

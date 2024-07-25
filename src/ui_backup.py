@@ -50,8 +50,8 @@ class AppMainWindow(QMainWindow):
         # Initialize the used language
         self.language = language
         if self.language == "":
-            # self.language = "en"
-            self.language = "jp"
+            # self.language = "jp"
+            self.language = "en"
         self.audio_folder = os.path.abspath(f"{AUDIO_FOLDER}/{self.language}")
 
         # Initialize the UI
